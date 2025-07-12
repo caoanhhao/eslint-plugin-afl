@@ -1,59 +1,55 @@
 {
-    "name": "eslint-plugin-afl",
-    "version": "0.1.0",
-    "type": "module",
-    "main": "index.js",
-    "description": "ESLint rules for AmiBroker Formula Language (AFL)",
-    "keywords": [
-        "eslint",
-        "eslintplugin",
-        "afl",
-        "amibroker"
-    ],
-    "exports": {
-        "default": "./dist/src/index.js"
-    },
-    "peerDependencies": {
-        "eslint": ">=8.0.0"
-    },
-    "engines": {
-        "node": ">=14.0.0"
-    },
-    "scripts": {
-        "build": "tsc -p tsconfig.json",
-        "build:watch": "tsc -p tsconfig.json --watch",
-        "clean": "npx rimraf dist",
-        "prebuild": "npm run clean",
-        "lint": "eslint src/**/*.ts rules/**/*.js",
-        "lint:fix": "eslint src/**/*.ts rules/**/*.js --fix",
-        "lint:debug": "node --inspect-brk ./node_modules/eslint/bin/eslint.js  test/test.afl --ext afl --debug",
-        "lint:debug:fix": "node --inspect-brk ./node_modules/eslint/bin/eslint.js  test/test.afl --ext afl --debug --fix",
-        "test": "npm run build && node test/index.js",
-        "dev": "npm run build:watch",
-        "prepare": "npm run build",
-        "prepublishOnly": "npm run build && npm run lint && npm test"
-    },
-    "languages": [
-        {
-            "id": "afl",
-            "aliases": [
-                "AFL",
-                "afl"
-            ],
-            "extensions": [
-                ".afl"
-            ],
-            "configuration": "./afl-language-configuration.json"
-        }
-    ],
-    "devDependencies": {
-        "@typescript-eslint/types": "^8.36.0",
-        "rimraf": "^6.0.1",
-        "ts-node": "^10.9.2",
-        "tsx": "^4.20.3",
-        "typescript": "^5.8.3"
-    },
-    "dependencies": {
-        "prettier": "^3.6.2"
+  "name": "eslint-plugin-afl",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "index.js",
+  "description": "ESLint rules for AmiBroker Formula Language (AFL)",
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "afl",
+    "amibroker"
+  ],
+  "exports": {
+    "default": "./dist/src/index.js"
+  },
+  "peerDependencies": {
+    "eslint": ">=8.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:watch": "tsc -p tsconfig.json --watch",
+    "clean": "npx rimraf dist",
+    "prebuild": "npm run clean",
+    "lint": "eslint src/**/*.ts rules/**/*.js",
+    "lint:fix": "eslint src/**/*.ts rules/**/*.js --fix",
+    "lint:debug": "node --inspect-brk ./node_modules/eslint/bin/eslint.js  test/test.afl --ext afl --debug",
+    "lint:debug:fix": "node --inspect-brk ./node_modules/eslint/bin/eslint.js  test/test.afl --ext afl --debug --fix",
+    "test": "npm run build && node test/index.js",
+    "dev": "npm run build:watch",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build && npm run lint && npm test"
+  },
+  "languages": [
+    {
+      "id": "afl",
+      "aliases": [
+        "AFL",
+        "afl"
+      ],
+      "extensions": [
+        ".afl"
+      ],
+      "configuration": "./afl-language-configuration.json"
     }
+  ],
+  "devDependencies": {},
+  "dependencies": {
+    "@typescript-eslint/types": "^8.36.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.8.3"
+  }
 }

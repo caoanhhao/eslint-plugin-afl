@@ -1,5 +1,0 @@
-{
-    "plugins": ["../prettier-plugin-afl/index.js"],
-    "useTabs": false,
-    "tabWidth": 4
-}
