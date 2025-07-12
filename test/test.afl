@@ -1,0 +1,265 @@
+_SECTION_BEGIN( "Cashflow Analyst" );
+
+global firstBarIndex, lastBarIndex, bi, shortPOC, Exclude;
+
+/**
+* Systems value
+*/
+Buy = 0;
+SELL = 0;
+Exclude = False;
+isDistribution[0] = Null;
+isAccumulation[0] = Null;
+
+/**
+* User variables
+*/
+maxPosition = 4;
+initialEquity = 100000;
+
+/**
+*	Program start
+*/
+
+/**
+* Default option
+*/
+SetOption( "InitialEquity", initialEquity ); // set initial equity = 100K
+SetOption( "MaxOpenPositions", maxPosition );
+SetPositionSize( 100 / maxPosition, spsPercentOfEquity );
+
+// position Status
+shortTermPositionStatus = POSITION_STATUS_CLOSE;
+//midTermPositionStatus = POSITION_STATUS_CLOSE;
+//longTermPositionStatus = POSITION_STATUS_CLOSE;
+
+// trend status
+longTermTrend = SIDEWAY;
+midTermTrend = SIDEWAY;
+shortTermTrend = SIDEWAY;
+
+/**
+* Step 1: Determining the trend
+*/
+
+/** 1 Trendline, determining uptrend or downtrend */
+
+// TODO: xác định xu hướng bằng trendline đồ thị chưa được, tạm thời dùng chỉ số đường MA thay thế
+
+// MA price value
+shortMA = MA( C, PERIOD_SHORT_TERM );
+midMA = MA( C, PERIOD_MID_TERM );
+longMA = MA( C, PERIOD_LONG_TERM );
+
+shortTermTrend = IIf( C > shortMA, UPTREND, DOWNTREND );
+midTermTrend = IIf( C > midMA, UPTREND, DOWNTREND );
+longTermTrend = IIf( C > longMA, UPTREND, DOWNTREND );
+
+// POC value per bar in range
+pocRange = Param( "POC range", PERIOD_LONG_TERM, 0, 1000, step = 1 );
+
+// default range of POC
+pocRange = IIf( pocRange != 0, pocRange, PERIOD_LONG_TERM );
+global shortPOC, poc;
+shortPOC[firstBarIndex] = Null;
+
+_TRACE( Name() + " Is processing " );
+// Get POC of each current bar
+for( i = firstBarIndex; i <= lastBarIndex; i++ )
+{
+    startBar = IIf( i > pocRange, i - pocRange, 0 );
+    poc[i] = getPoc( startBar, i );
+
+    startBar = IIf( i > PERIOD_SHORT_TERM, i - PERIOD_SHORT_TERM, 0 );
+    shortPOC[i] = getPoc( startBar, i );
+}
+
+// Phân phối đỉnh , POC nằm trên thị giá , trung bình giá giai đoạn ngắn và trung bình giá trung hạn đều cao hơn giá hiện tại.
+isDistribution = (poc > C) AND (shortPOC > C);
+
+// Tích lũy đáy, POC nằm dưới thị giá, giá giai đoạn ngắn và trung hạn đều thấp hơn thị giá hiện tại.
+isAccumulation = (poc < C) AND (shortPOC < C);
+
+/** 2 Strength or weakness of the trend */
+
+// TODO: VAPM hiện tại vẫn chưa truy xuất dữ liệu được
+
+//+ VAPM (Volume at Price Multi) -  Vùng màu vàng
+//VAPM phía trên và phía dưới giá hiện tại có nhiều không
+// Dùng cách tìm POC 3, 6, 12 tháng để nhận biết hỗ trợ kháng cự mạnh
+//VAPM phía dưới nhiều + khối lượng lớn: hỗ trợ mạnh
+//VAPM phía trên nhiều + khối lượng lớn: kháng cự mạnh
+
+//+ Phân tích yếu tố khối lượng: khối lượng lớn, thấp hay trung bình
+// So khối lượng trung bình nhiều phiên để thấy
+
+//+ Các tín hiệu chỉ báo có các loại phân kỳ không? Đặc biệt lưu ý phân kỳ nên sử dụng chung với kháng cự-hỗ trợ, khối lượng... để có độ chính xác cao hơn
+//Composite Index
+//Stochastic Oscillator
+//Ultimate Oscillator
+
+// TODO MFI Signal dùng để test. có thể xóa nếu không ổn.
+// Tín hiệu bán - khi dòng tiền suy yếu
+// shortPeriod = 5;
+// midPeriod = 20;
+// longPeriod = 50;
+// volumeIncreaseThreshold = 50;
+// // Tính toán các chỉ báo về khối lượng
+// shortVolMA = MA( Volume, shortPeriod );
+// midVolMA = MA( Volume, midPeriod );
+// longVolMA = MA( Volume, longPeriod );
+// // Tính toán Money Flow Index (MFI)
+// typical = (High + Low + Close)/3;
+// rawMoneyFlow = typical * Volume;
+// moneyFlowRatio = Sum( IIf(typical > Ref(typical,-1 ), rawMoneyFlow, 0), 14) / Sum( IIf(typical < Ref(typical,-1 ), rawMoneyFlow, 0), 14);
+// MFIValue = (100 - (100 / (1 + moneyFlowRatio)));
+
+// Xác định các điều kiện dòng tiền tăng
+// volumeIncrease = Volume > shortVolMA * (1 + volumeIncreaseThreshold/100);
+// volumeTrend = shortVolMA > midVolMA AND midVolMA > longVolMA;
+// priceStrength = Close > MA( Close, shortPeriod );
+// mfiStrength = MFIValue > 50 AND MFIValue < 80; // Tránh vùng quá mua
+
+// Tín hiệu mua - khi dòng tiền đang gia tăng
+// mfiBuySignal = volumeIncrease AND volumeTrend AND priceStrength AND mfiStrength;
+// mfiSellSignal = Cross( MFIValue, 80 ) OR // MFI vào vùng quá mua
+//        (Volume < shortVolMA AND Close < MA( Close, shortPeriod ));
+// END TODO MFI Signal
+
+compositeIndexVal = compositeIndex();
+
+// TODO: indicator signal sử dụng phương pháp đa số hơn thiểu số. nhiều indicator báo tín hiệu cùng nhau thì đúng hơn.
+// indicator signal is final result of many indicator.
+// indicatorBuySignal = (Cross( C, shortPOC ) AND mfiBuySignal);
+// indicatorSellSignal = O > C AND mfiSellSignal;
+
+indicatorBuySignal = Ref( compositeIndexVal, -2 ) > Ref( compositeIndexVal, -1 ) AND Ref( compositeIndexVal, -1 ) < compositeIndexVal AND Ref( compositeIndexVal, -1 ) < 30;
+indicatorSellSignal = Ref( compositeIndexVal, -2 ) < Ref( compositeIndexVal, -1 ) AND Ref( compositeIndexVal, -1 ) > compositeIndexVal AND Ref( compositeIndexVal, -1 ) > 90;
+
+//+ Dòng tiền:
+//âm hay dương ( Khối lượng thanh khoản giảm là âm, tăng là dương
+// Kiểm tra dòng tiền dương
+// Tìm khối lượng thanh khoản trung bình x ngày tăng liên tiếp nhiều n ngày
+// TODO: dùng hàm Highest phối hợp MA Volume để tìm sự gia tăng dòng tiền, cũng như đỉnh thanh khoản trung bình N ngày tương ứng thuật toán
+x = Param( "Average trading volume range ( bars )", 5, 1, 100, 1 );
+n = Param( "Average trading volume Increase range ( bars )", 3, 1, 100, 1 );
+CFPositive = Volume > MA( Volume, x ) AND Ref( Volume, -n ) > Ref( MA( Volume, x ), -n );
+
+//âm tốt: mức âm ngày càng giảm, âm xấu: mức âm ngày càng tăng
+//dương tốt: mức dương ngày càng tăng, dương xấu: mức dương ngày càng giảm
+
+
+//+ Gap:
+//Break away gap
+//Run away gap
+//Exhaustion gap
+
+//Chú ý:
+// Hướng của thị trường chung là gì? VNIndex, HOSE, HNX
+// Đồ thị hàng ngày, hàng tuần và hàng tháng của CP cho thấy điều gì?
+// Những cổ phiếu tăng giá mạnh thường có đồ thị bên trái màu trắng.
+
+
+/**
+* Step 2: Resistance and Support
+*/
+
+//Dùng VAPM (Volumn at Price Multi - Màu vàng)
+//Hỗ trợ
+//Quan sát chùm khối lượng giao dịch lớn nhất hoặc là cái khối lượng cao nhất gần nhất (phối hợp VAPM cao nhất nếu có thể) nằm ở phía dưới giá hiện tại.
+//Tìm ngày hoặc các ngày giao dịch có giá thấp nhất + khối lượng nhiều nhất hoặc có hiện tượng khối lượng tăng dần càng tốt.
+//Chọn giá có VAPM thấp nhất trong những vùng gần đó, (sẽ tùy thuộc vào trường hợp cụ thể, không nên áp đặt, cần thực hành nhiều để phân biệt).
+
+//Kháng cự
+//Quan sát VAPM gần nhất bên trên giá hiện tại phối hợp với khối lượng giao dịch
+//Chọn giá cao nhất gần nhất, lưu ý thêm nếu khối lượng giao dịch có hiện tượng giảm dần.
+
+//Dùng Trendline
+//Ngắn hạn
+
+//Trung dài hạn
+
+//Chú ý:
+//Phân tích VAPM phải kèm khối lượng giao dịch
+//Xem xét độ mạnh yếu của hỗ trợ, kháng cự (hoặc vùng hỗ trợ, vùng kháng cự)
+//Xem xét hỗ trợ, kháng cự trong ngắn hạn, trung hạn
+//Có thể áp dụng các công cụ khác để tìm kháng cự-hỗ trợ.
+//Đặc biệt: dấu hiệu mua ở bước 3 cũng được xem là 1 hỗ trợ mới hoặc dấu hiệu bán cũng là 1 kháng cự.
+
+
+/**
+* Step 3: Make Order
+*/
+
+//Khi giá đóng của vượt qua kháng cự với khối lượng khủng
+//Khi xuất hiện dấu hiệu (các loại phân kỳ, gap, chạm hỗ trợ, các yếu tố khác thuộc dòng tiền...)
+//Dấu hiệu là có hiện tượng bất thường trong những cái bình thường
+//Chú ý:
+//Khi giá đang gần hỗ trợ mạnh thì mua nhiều.
+//Khi giá xa hỗ trợ thì mua ít và nên chia tiền ra mua theo đợt.
+//Không được mua ngay kháng cự.
+
+// TODO: buySignal đang code tạm , chưa đúng với mô tả phía trên
+buySignal = indicatorBuySignal;
+doBuy( buySignal );
+
+/**
+* Step 4: Defences
+*/
+
+//Phòng thủ ngay dưới Hỗ trợ gần nhất, dưới đáy thấp nhất gần nhất.
+//Lưu ý: Nếu chỉ dầu từ ngắn hạn, NDT chọn ngày và kháng cự gần nhất. Nhưng dầu từ trung và dài hạn, NDT cần chọn vùng hỗ trợ và kháng cự khác mạnh hơn (phải thực hành nhiều để phân biệt).
+//THAM KHẢO:
+//Giá phòng thủ = Hỗ trợ - 0.1 (có thể dài hơn tùy vùng hỗ trợ nào, mức giá nào)
+//Hay Giá phòng thủ = Hỗ trợ - 0.5 (đối với CP có giá cao)
+
+// TODO: bước phòng thủ chưa thực hiện, mất rất nhiều lãi kiếm được.
+curBuyPrice = Ref( Close, -BarsSince(Buy ));
+isProfit = C > curBuyPrice;
+isBreakSupport = curBuyPrice * 0.95 > C;
+
+
+
+/**
+* Step 5: Change resistance and Defence price
+*/
+
+//Khi giá tăng lên trên kháng cự thì đổi hỗ trợ mới là kháng cự cũ, Phòng thủ dưới hỗ trợ mới.
+//Hoặc theo nguyên tắc của xu hướng, xu hướng lên thì đỉnh sau cao hơn đỉnh trước, đáy sau cao hơn đáy trước thì phòng thủ dưới đáy mới và ngược lại.
+
+/**
+* Step 6: Take profit
+*/
+
+// Tín hiệu bán khi:
+// 1. Giá đóng cửa mất hỗ trợ mới (isBreakSupport)
+// 2. Có dấu hiệu bán mạnh từ indicator (indicatorSellSignal)
+// 3. Đạt mục tiêu chốt lời (takeProfit)
+// 4. Xuất hiện phân kỳ giảm giữa giá và khối lượng
+// 5. Có gap giảm giá đáng kể
+// 6. Các yếu tố dòng tiền cho thấy sự suy yếu
+//Chú ý: Không được bán ngay hỗ trợ.
+
+// TODO code tạm chốt lời , chưa đúng mô tả phía trên.
+buyHighLevelWaterMark = HighestSince( Buy, High );
+takeProfit = isProfit AND C < buyHighLevelWaterMark * 0.85;
+// takeProfit = (isProfit AND (C < shortPOC * 0.95 OR C < buyHighLevelWaterMark * 0.85));
+
+// TODO: trailing stop loss chưa thực hiện
+trailingStopLoss = C < 0.85 * buyHighLevelWaterMark;
+
+sellSignal = isBreakSupport OR indicatorSellSignal OR takeProfit OR trailingStopLoss;
+
+// Execute buy and sell operations based on active signals
+doSell( sellSignal );
+
+// FIXME: khi xóa tín hiệu duplicate thì các tính hiệu mua bán , dừng lỗ tính xai. phải xóa các signal indicator hoặc giải pháp khác.
+// Remove duplicate signal
+cleanSignal( False );
+
+// draw shape in chart
+drawSignal( -15 );
+
+#include_once <Log.afl>
+
+_SECTION_END();

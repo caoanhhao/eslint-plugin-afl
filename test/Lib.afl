@@ -1,0 +1,245 @@
+global PERIOD_LONG_TERM, PERIOD_MID_TERM, PERIOD_SHORT_TERM, POSITION_STATUS_OPEN, POSITION_STATUS_CLOSE, UPTREND, DOWNTREND, SIDEWAY, shortPOC, poc;
+
+/**
+Initial global variable
+*/
+shortPOC = Null;
+poc = Null;
+
+/**
+Constant
+*/
+UPTREND = 1;
+DOWNTREND = 0;
+SIDEWAY = 2;
+POSITION_STATUS_OPEN = 1;
+POSITION_STATUS_CLOSE = 0;
+PERIOD_LONG_TERM = 300;
+PERIOD_MID_TERM = 180;
+PERIOD_SHORT_TERM = 30;
+lastSellBar = LastValue( Highest( IIf( Sell, BarIndex( ), 0 ) ) );
+/**
+Make buy and draw signal on chart
+*/
+function doBuy( condition ) {
+    global Buy, Exclude;
+    Buy = condition AND NOT Exclude;
+}
+
+/**
+Make buy and draw signal on chart
+*/
+function doSell( condition ) {
+    global Sell, Exclude;
+    Sell = condition AND NOT Exclude;
+}
+
+/**
+Ignoge symbol from Scan, Explore, Backtest
+*/
+function doIgnore() {
+    global Exclude, Filter;
+    Filter = True;
+    Exclude = True;
+    _TRACE( Name( ) + " is ignore ");
+}
+
+/**
+Buy and sell in analysis
+*/
+function cleanSignal( isOnlyOne ) {
+    global Buy, Sell, Cover, Short;
+    Buy = ExRem( Buy, Sell ); // Buy once until sell signal on
+    Sell = ExRem( Sell, Buy ); // Sell once until buy signal on
+    // Short = Sell;
+    // Cover = Buy;
+
+    // Keep last signal for clean view
+    if (isOnlyOne) {
+        // Find position of last signals
+        lastBuyBar = LastValue( Highest(IIf(Buy, BarIndex( ), 0)));
+        lastSellBar = LastValue( Highest(IIf(Sell, BarIndex( ), 0)));
+
+        // Keep only the most recent buy/sell signals
+        Buy = IIf( BarIndex( ) == lastBuyBar, 1, 0);
+        Sell = IIf( BarIndex( ) == lastSellBar, 1, 0);
+    }
+}
+
+/**
+Get POC (Point Of Control) value
+*/
+function getPoc( startBarIndex, endBarIndex ) {
+    global H, L, V;
+    local i;
+    poc = 0;
+
+    // Check data is validate
+    isValid = False;
+    for (i = startBarIndex; i <= endBarIndex; i++) {
+        // Highest price not smaller Lowest price
+        if (H[i] < L[i]) {
+            isValid = False;
+            _TRACE( Name( ) + " Invalid data at bar index " + i + ": High " + H[i] + " is less than Low " + L[i]);
+            break;
+        }
+
+        // Price have different value is valid
+        if (H[i] != L[i]) {
+            isValid = True;
+            // break;
+        }
+    }
+
+    if (isValid) {
+        // check chart have data
+        mat = PriceVolDistribution( H, L, V, 200, false, startBarIndex, endBarIndex );
+        maxv = 0;
+        bins = MxGetSize( mat, 0 );
+
+        for (i = 0; i < bins; i++) {
+            if (maxv < mat[i][1]) {
+                maxv = mat[i][1];
+                poc = mat[i][0];
+            }
+        }
+    } else {
+        doIgnore();
+    }
+
+    return poc;
+}
+
+/**
+Draw Buy and Sell signal on chart
+*/
+function drawSignal( offset ) {
+    PlotShapes( shapeUpArrow * Buy, colorGreen, 2, Low, offset );
+    PlotShapes( shapeDownArrow * Sell, colorDarkRed, 2, High, offset );
+}
+
+/**
+Converts bar index to date string.
+index (integer): bar index
+format (integer): DateTimeToString mode 0-4
+*/
+function dateStringFromBarIndex( index, format ) {
+    dateIndex = DateTime();
+    indexDt = dateIndex[index];
+    return DateTimeToStr( indexDt, format );
+}
+
+/**
+Similar to ExRem but keeps the last signal.
+This function processes two arrays of signals (firstSignal and secondSignal) and returns a new array where:
+- The first signal is kept until the second signal appears.
+- The last first signal before the second signal is kept.
+- All other first signals are removed.
+- The second signal is removed.
+The function iterates through the arrays from the last bar to the first, ensuring that the last first signal before the second signal is kept.
+*/
+function ExRemLast( firstSignal, secondSignal ) {
+    global lastBarIndex, firstBarIndex;
+    haveFirst = False;
+    for (i = lastBarIndex; i > firstBarIndex; i--) {
+        // If there is a first signal and second signal after that
+        result[i] = False;
+        if (firstSignal[i] AND haveFirst == False)
+        {
+            haveFirst = True;
+            result[i] = True;
+        }
+        if (secondSignal[i]) {
+            haveFirst = False;
+        }
+    }
+    return result;
+}
+
+/**
+Returns the index of the First bar index in any action.
+*/
+function getFirstBarIndex() {
+    bi = BarIndex();
+    // Initialize first bar index when the action is an indicator or other
+    if (Status( "action" ) == actionIndicator) {
+        firstBarIndex = FirstVisibleValue( bi );
+    } else {
+        fbr = Status( "FirstBarInRange" );
+        firstBarArr = Valuewhen( fbr, bi );// array
+        firstBarIndex = LastValue( firstBarArr );// element of array
+    }
+    return firstBarIndex;
+}
+
+/**
+Returns the index of the last bar index in any action.
+*/
+function getLastBarIndex() {
+    bi = BarIndex();
+    // Initialize last bar index when the action is an indicator or other
+    if (Status( "action" ) == actionIndicator) {
+        lastBarIndex = LastVisibleValue( bi );
+    } else {
+        lbr = Status( "LastBarInRange" );
+        lastBarArr = Valuewhen( lbr, bi );// array
+        lastBarIndex = LastValue( lastBarArr );// element of array
+    }
+    return lastBarIndex;
+}
+
+/**
+Find peaks within the period
+*/
+function peakIndex( period ) {
+    return High == HHV( High, period );
+}
+
+/**
+Find bottoms within the period
+*/
+function bottomIndex( period ) {
+    return Low == LLV( Low, period );
+}
+
+/**
+Draw a line on chart
+x0, x1 is bar index of points
+y0, y1 is vertical axis value
+*/
+function drawLine( lineArrayObj, color, style ) {
+    Plot( lineArrayObj, "line", color, style );
+}
+
+/**
+Calculate Composite Index
+*/
+function compositeIndex() {
+    return RSI( 14 ) - Ref( RSI(14 ), -9) + MA( RSI(3 ), 3);
+}
+
+/**
+Initial global variale
+*/
+function init() {
+    global bi, firstBarIndex, lastBarIndex;
+
+    // Init bar index
+    bi = BarIndex();
+    firstBarIndex = getFirstBarIndex();
+    lastBarIndex = getLastBarIndex();
+
+    // Exclude symbols with insufficient price history data. This ensures we have enough historical data points for reliable analysis
+    minBar = PERIOD_LONG_TERM;
+    if (BarCount < minBar) {
+        _TRACEF( Name( ) + " has insufficient bars (" + BarCount + "). Minimum required: " + minBar + " bars");
+        doIgnore();
+    }
+
+    // Filter Ignore symbol list
+    if (InWatchListName( "Ignore" )) {
+        Filter = True;
+        Exclude = True;
+    }
+}
+init();
