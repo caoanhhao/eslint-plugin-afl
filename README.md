@@ -60,7 +60,7 @@ Add vscode eslint setting
   ]
 ```
 
-2. **Lint your AFL files:**
+1. **Lint your AFL files:**
 
 ```sh
 eslint path/to/your/file.afl

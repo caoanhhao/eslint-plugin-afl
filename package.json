@@ -22,7 +22,7 @@
     "scripts": {
         "build": "tsc -p tsconfig.json",
         "build:watch": "tsc -p tsconfig.json --watch",
-        "clean": "rimraf dist",
+        "clean": "npx rimraf dist",
         "prebuild": "npm run clean",
         "lint": "eslint src/**/*.ts rules/**/*.js",
         "lint:fix": "eslint src/**/*.ts rules/**/*.js --fix",
@@ -48,7 +48,7 @@
     ],
     "devDependencies": {
         "@typescript-eslint/types": "^8.36.0",
-        "rimraf": "^5.0.5",
+        "rimraf": "^6.0.1",
         "ts-node": "^10.9.2",
         "tsx": "^4.20.3",
         "typescript": "^5.8.3"
