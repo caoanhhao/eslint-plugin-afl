@@ -38,9 +38,26 @@ const rule: Rule.RuleModule = {
                 fix(fixer) {
                   if (!match) return null;
                   const fixedArgs = `${hasSpaceAfterOpen ? '' : ' '}${args.trim()}${hasSpaceBeforeClose ? '' : ' '}`;
-                  const start = context.sourceCode.getIndexFromLoc({ line: lineNumber, column: match.index + fn.length + 1 }); // sau dấu (
-                  const end = context.sourceCode.getIndexFromLoc({ line: lineNumber, column: match.index + full.length - 1 }); // trước dấu )
-                  return fixer.replaceTextRange([start, end], fixedArgs);
+                  const start = context.sourceCode.getIndexFromLoc({ line: lineNumber, column: match.index + fn.length + 1 });
+                  const end = context.sourceCode.getIndexFromLoc({ line: lineNumber, column: match.index + full.length - 1 });
+
+                  // Only fix missing spaces, do not replace the entire args
+                  const fixes: any[] = [];
+                  if (!hasSpaceAfterOpen) {
+                    // Add space after '('
+                    fixes.push(fixer.insertTextAfterRange(
+                      [start, start],
+                      ' '
+                    ));
+                  }
+                  if (!hasSpaceBeforeClose) {
+                    // Add space before ')'
+                    fixes.push(fixer.insertTextBeforeRange(
+                      [end, end],
+                      ' '
+                    ));
+                  }
+                  return fixes;
                 },
               });
             }
