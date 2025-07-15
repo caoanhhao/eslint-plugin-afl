@@ -1,4 +1,4 @@
-import { tokenize } from './tokenizer';
+import { tokenize } from './tokenizer.js';
 import { AST_NODE_TYPES } from '@typescript-eslint/types';
 
 export function parseForESLint(text: string, options = {}) {

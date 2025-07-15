@@ -1,5 +1,5 @@
 import { AST_TOKEN_TYPES } from "@typescript-eslint/types";
-import { Token } from "./types";
+import { Token } from "./types.js";
 
 // Regex patterns with sticky flag
 const whitespacePattern = /\s+/y;

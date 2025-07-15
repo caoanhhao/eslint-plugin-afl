@@ -11,7 +11,9 @@
     "amibroker"
   ],
   "exports": {
-    "default": "./dist/src/index.js"
+    ".": "./dist/index.js",
+    "./src/tokenizer": "./dist/tokenizer.js",
+    "./src/parser": "./dist/parser.js"
   },
   "peerDependencies": {
     "eslint": ">=8.0.0"
