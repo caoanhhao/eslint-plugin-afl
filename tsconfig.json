@@ -1,23 +1,14 @@
 {
   "compilerOptions": {
+    "module": "commonjs",
     "target": "ES2020",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
     "declaration": true,
     "outDir": "dist",
-    "rootDir": "./",
-    "strict": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    "sourceMap": true
+    "rootDir": "./src",
+    "sourceMap": true,
   },
   "include": [
     "src",
-    "rules",
-    "parser.ts",
-    "tokenizer.ts",
-    "index.ts"
   ],
   "exclude": [
     "node_modules",
