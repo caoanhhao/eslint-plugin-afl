@@ -1,5 +1,5 @@
 import { defineConfig } from "eslint/config";
-import afl from './dist/src/index.js';
+import afl from './dist/index.js';
 
 const configs = defineConfig([
   {
