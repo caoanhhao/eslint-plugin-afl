@@ -49,9 +49,9 @@
       "configuration": "./afl-language-configuration.json"
     }
   ],
-  "devDependencies": {},
   "dependencies": {
     "@typescript-eslint/types": "^8.36.0",
+    "acorn": "^8.15.0",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.3"
   }

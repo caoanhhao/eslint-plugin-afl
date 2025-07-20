@@ -1,30 +1,16 @@
-import { tokenize } from './tokenizer.js';
-import { AST_NODE_TYPES } from '@typescript-eslint/types';
+import { Options, tokenizer, Parser, tokTypes } from 'acorn';
+import AFLParser from './afl-parser.js';
 
-export function parseForESLint(text: string, options = {}) {
-  const tokens = tokenize(text);
+export function parseForESLint(text: string, options: Options = { ecmaVersion: 6, sourceType: "script" }): any {
+  options.ranges = true; // Ensure ranges are enabled for ESLint compatibility
+  const aflParserInstance = Parser.extend(AFLParser as any);
+  const acornAST = aflParserInstance.parse(text, options);
+  const tokens = [...tokenizer(text, options)];
 
-  const body = tokens.length
-    ? tokens.map(token => ({
-        type: AST_NODE_TYPES.ExpressionStatement,
-        expression: {
-          type: token.type || 'Identifier',
-          name: token.value,
-          loc: token.loc,
-          range: token.range
-        },
-        loc: token.loc,
-        range: token.range
-      }))
-    : [];
-
+  // AST for ESLint compatibility
   const ast = {
-    type: 'Program',
-    body,
-    sourceType: 'script',
-    loc: body.length
-      ? { start: body[0].loc.start, end: body[body.length - 1].loc.end }
-      : { start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+    ...acornAST,
+    loc: { start: acornAST.start, end: acornAST.end },
     range: [0, text.length],
     tokens,
     comments: []
