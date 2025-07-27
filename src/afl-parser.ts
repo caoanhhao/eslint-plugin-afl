@@ -7,7 +7,10 @@ function init() {
     return class AFLParser extends Parser {
       // Override the parseStatement method to handle custom syntax
       parseStatement(context, topLevel, exports) {
-        if (this.type?.label === "name" && this.value === "global") {
+        const valueLowerCase = getLowerCaseValue(this.value);
+
+        // Handle 'global' and 'local' variable declarations
+        if (this.type?.label === "name" && (valueLowerCase === "global" || valueLowerCase === "local")) {
           this.next();
           const declarations: any[] = [];
           do {
@@ -26,13 +29,13 @@ function init() {
           this.semicolon(); // consume ;
           return {
             type: AST_NODE_TYPES.VariableDeclarator,
-            kind: "global",
+            kind: valueLowerCase,
             declarations
           };
         }
 
         // Handle #include as import (supports both #include "file" and #include <file>)
-        if (this.type.label === "privateId" && (this.value === "include" || this.value === "include_once")) {
+        if (this.type.label === "privateId" && (valueLowerCase === "include" || valueLowerCase === "include_once")) {
           this.next();
           let source;
           // Accept string literal: #include "file.afl"
@@ -89,8 +92,10 @@ function init() {
 
       // Parse expressions with custom handling for 'AND' and 'OR' as logical operators
       parseExprOp(left: any, leftStartPos: any, minPrec: any, ...args: any[]) {
+        const valueLowerCase = getLowerCaseValue(this.value);
+
         // If the token is 'AND', treat it as the logical AND operator '&&'
-        if (this.type.label === "name" && this.value.toLowerCase() === "and") {
+        if (this.type.label === "name" && valueLowerCase === "and") {
           const operator = "&&";
           this.next();
           const right = this.parseExprOp(this.parseMaybeUnary(), leftStartPos, minPrec, ...args);
@@ -101,8 +106,9 @@ function init() {
             right
           };
         }
+
         // If the token is 'OR', treat it as the logical OR operator '||'
-        if (this.type.label === "name" && this.value.toLowerCase() === "or") {
+        if (this.type.label === "name" && valueLowerCase === "or") {
           const operator = "||";
           this.next();
           const right = this.parseExprOp(this.parseMaybeUnary(), leftStartPos, minPrec, ...args);
@@ -113,10 +119,33 @@ function init() {
             right
           };
         }
+
         return super.parseExprOp(left, leftStartPos, minPrec, ...args);
       }
+        
+      parseExprAtom(refDestructuringErrors) {
+        const valueLowerCase = getLowerCaseValue(this.value);
+
+        // If the keyword 'Not' is encountered, parse it as a negation UnaryExpression
+        if (this.type.label === "name" && valueLowerCase === 'not') {
+          const node = this.startNode();
+          node.operator = '!';
+          node.prefix = true;
+          this.next(); // consume 'Not'
+          const arg = this.parseMaybeUnary();
+          node.argument = arg;
+          return this.finishNode(node, AST_NODE_TYPES.UnaryExpression);
+        }
+    
+        return super.parseExprAtom(refDestructuringErrors);
+      }
+    
     }
   }
+}
+
+function getLowerCaseValue(value) {
+  return typeof value === 'string' ? value.toLowerCase() : value;
 }
 
 export default init();
