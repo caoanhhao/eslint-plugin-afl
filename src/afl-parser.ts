@@ -28,7 +28,7 @@ function init() {
           } while (true);
           this.semicolon(); // consume ;
           return {
-            type: AST_NODE_TYPES.VariableDeclarator,
+            type: AST_NODE_TYPES.VariableDeclaration,
             kind: valueLowerCase,
             declarations
           };
